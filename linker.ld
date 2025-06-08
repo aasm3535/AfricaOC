@@ -1,0 +1,22 @@
+ENTRY(kernel_main)
+OUTPUT_FORMAT("binary")
+OUTPUT_ARCH(i386)
+
+SECTIONS {
+    . = 0x7E00;
+    .text : {
+        *(.text)
+    }
+    .data : {
+        *(.data)
+        *(.rodata)
+    }
+    .bss : {
+        *(.bss)
+    }
+    /DISCARD/ : {
+        *(.eh_frame)
+        *(.note*)
+        *(.comment*)
+    }
+}
