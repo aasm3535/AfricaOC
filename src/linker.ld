@@ -1,22 +1,25 @@
-ENTRY(kernel_main)
+/* src/linker.ld */
+ENTRY(_start)
 OUTPUT_FORMAT("binary")
-OUTPUT_ARCH(i386)
 
 SECTIONS {
+    /* Адрес, по которому загрузчик загружает ядро */
     . = 0x7E00;
+
     .text : {
         *(.text)
     }
+    .rodata : {
+        *(.rodata)
+    }
     .data : {
         *(.data)
-        *(.rodata)
     }
     .bss : {
         *(.bss)
     }
     /DISCARD/ : {
         *(.eh_frame)
-        *(.note*)
-        *(.comment*)
+        *(.comment)
     }
 }
