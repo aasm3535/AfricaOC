@@ -1,6 +1,50 @@
-// src/sys/sys16.c
+#include "sys16.h"
 
-void print_char(char c); // Объявляем, чтобы можно было использовать
+// --- Функции вывода ---
+
+void print_char(char c) {
+    if (c == '\n') {
+        __asm__ __volatile__ ( "int $0x10" : : "a" ((0x0E << 8) | '\r'), "b" (0x0000) );
+    }
+    __asm__ __volatile__ ( "int $0x10" : : "a" ((0x0E << 8) | c), "b" (0x0000) );
+}
+
+void print_string(const char* str) {
+    // ИСПРАВЛЕНИЕ: Добавлен инкремент указателя str++
+    while (*str) {
+        print_char(*str++);
+    }
+}
+
+void clear_screen() {
+    __asm__ __volatile__("int $0x10" : : "a"(0x0003));
+}
+
+// --- Функции ввода ---
+
+char read_char() {
+    char key;
+    __asm__ __volatile__ ( "int $0x16" : "=a"(key) : "a"(0x0000) );
+    return key;
+}
+
+void read_line(char* buffer, int max_len) {
+    int i = 0;
+    while (i < max_len - 1) {
+        char c = read_char();
+        if (c == '\r') { break; }
+        else if (c == '\b') { // Backspace
+            if (i > 0) { i--; print_char('\b'); print_char(' '); print_char('\b'); }
+        } else {
+            buffer[i++] = c;
+            print_char(c);
+        }
+    }
+    buffer[i] = '\0';
+    print_string("\n");
+}
+
+// --- Вспомогательные функции ---
 
 int strcmp(const char* s1, const char* s2) {
     while (*s1 && (*s1 == *s2)) {
@@ -10,7 +54,6 @@ int strcmp(const char* s1, const char* s2) {
     return *(const unsigned char*)s1 - *(const unsigned char*)s2;
 }
 
-// Новая функция для вывода 16-битного числа в 16-ричном формате
 void print_hex(unsigned int n) {
     char* hex_chars = "0123456789ABCDEF";
     for (int i = 12; i >= 0; i -= 4) {
@@ -18,7 +61,6 @@ void print_hex(unsigned int n) {
     }
 }
 
-// Новая функция для рекурсивного вывода 16-битного числа в 10-ричном формате
 void print_dec_recursive(unsigned int n) {
     if (n == 0) return;
     print_dec_recursive(n / 10);
@@ -31,9 +73,4 @@ void print_dec(unsigned int n) {
     } else {
         print_dec_recursive(n);
     }
-}
-
-
-void initialize_syscalls() {
-    // Заглушка
 }
