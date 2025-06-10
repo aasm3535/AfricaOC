@@ -1,10 +1,17 @@
 // src/kernel.c
 
-// Объявления функций из других файлов, чтобы компилятор их "видел"
+#include "mem/memory.h"
+
+// Объявления функций из других файлов
 void print_char(char c);
 void print_string(const char* str);
-int strcmp(const char* s1, const char* s2); // Из sys16.c
-void initialize_syscalls();                 // Из sys16.c
+int strcmp(const char* s1, const char* s2);
+void initialize_syscalls();
+void print_hex(unsigned int n);
+
+// Объявление символа 'end' из linker.ld.
+// '&end' будет адресом начала нашей кучи.
+extern unsigned int end;
 
 // --- Функции для ввода с клавиатуры ---
 
@@ -60,43 +67,86 @@ void read_line(char* buffer, int max_len) {
  * Главный цикл командного интерпретатора.
  * Читает команду и выполняет ее.
  */
-void shell_loop() {
-    char input_buffer[100]; // Буфер для команд пользователя
+ void shell_loop() {
+     char input_buffer[100];
 
-    while (1) {
-        print_string("> "); // Приглашение к вводу
-        read_line(input_buffer, sizeof(input_buffer));
+     while (1) {
+         print_string("> ");
+         read_line(input_buffer, sizeof(input_buffer));
 
-        if (strcmp(input_buffer, "ping") == 0) {
-            print_string("pong\n");
-        } else if (strcmp(input_buffer, "help") == 0) {
-            print_string("Available commands:\n");
-            print_string("  ping : Responds with 'pong'.\n");
-            print_string("  help : Shows this help message.\n");
-        } else if (input_buffer[0] == '\0') {
-            // Ничего не делать, если введена пустая строка
-        } else {
-            print_string("Unknown command: '");
-            print_string(input_buffer);
-            print_string("'\nType 'help' for a list of commands.\n");
-        }
-    }
-}
+         if (strcmp(input_buffer, "ping") == 0) {
+             print_string("pong\n");
+         } else if (strcmp(input_buffer, "help") == 0) {
+             print_string("Available commands:\n");
+             print_string("  ping   : Responds with 'pong'.\n");
+             print_string("  help   : Shows this help message.\n");
+             print_string("  memmap : Displays the memory map.\n");
+             print_string("  memtest: Runs a simple memory allocation test.\n");
+         } else if (strcmp(input_buffer, "memmap") == 0) {
+             print_memory_map();
+         } else if (strcmp(input_buffer, "memtest") == 0) {
+             print_string("Running memory test...\n");
+
+             print_string("Allocating 32 bytes... ");
+             char* block1 = (char*)malloc(32);
+             if (block1) {
+                 print_string("OK. Addr: 0x"); print_hex((unsigned int)block1); print_string("\n");
+             } else {
+                 print_string("FAILED.\n");
+             }
+
+             print_string("Allocating 128 bytes... ");
+             char* block2 = (char*)malloc(128);
+             if (block2) {
+                 print_string("OK. Addr: 0x"); print_hex((unsigned int)block2); print_string("\n");
+             } else {
+                 print_string("FAILED.\n");
+             }
+
+             print_string("Current memory map:\n");
+             print_memory_map();
+
+             print_string("Freeing first block (32 bytes)...\n");
+             free(block1);
+             print_memory_map();
+
+             print_string("Freeing second block (128 bytes)...\n");
+             free(block2);
+             print_memory_map();
+
+             print_string("Test finished.\n");
+
+         } else if (input_buffer[0] == '\0') {
+             // Ничего не делать
+         } else {
+             print_string("Unknown command: '");
+             print_string(input_buffer);
+             print_string("'\n");
+         }
+     }
+ }
 
 
 // --- Главная функция ядра ---
 
 void kmain() {
-    print_string("Hello from the 16-bit C Kernel!\n");
-    print_string("AfricaOS is now interactive. Zzz...\n\n");
+    // Определяем начало и размер кучи.
+    // Куча начинается после ядра (&end) и простирается до 632 КБ.
+    // (Оставляем немного места в конце для безопасности).
+    void* heap_start = (void*)&end;
+    unsigned int heap_size = 0x9E000 - (unsigned int)heap_start;
 
-    // Инициализируем наши "системные вызовы" (пока что заглушка)
-    initialize_syscalls();
+    // Инициализируем менеджер памяти
+    memory_init(heap_start, heap_size);
 
-    // Запускаем бесконечный цикл командного интерпретатора
+    print_string("AfricaOS Kernel with Memory Management\n");
+    print_string("Heap starts at 0x");
+    print_hex((unsigned int)heap_start);
+    print_string("\n\n");
+
+    // Запускаем shell
     shell_loop();
 }
-
 
 // --- Функции вывода (улучшенная версия) ---
 

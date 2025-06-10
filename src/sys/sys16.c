@@ -1,12 +1,7 @@
 // src/sys/sys16.c
 
-/**
- * Простая реализация сравнения двух строк.
- * Возвращает 0, если строки равны.
- * @param s1 Первая строка.
- * @param s2 Вторая строка.
- * @return 0 если строки идентичны, иначе - разница между первыми отличающимися символами.
- */
+void print_char(char c); // Объявляем, чтобы можно было использовать
+
 int strcmp(const char* s1, const char* s2) {
     while (*s1 && (*s1 == *s2)) {
         s1++;
@@ -15,11 +10,30 @@ int strcmp(const char* s1, const char* s2) {
     return *(const unsigned char*)s1 - *(const unsigned char*)s2;
 }
 
-/**
- * Инициализация подсистемы системных вызовов.
- * В будущем здесь можно будет настроить обработчики прерываний для syscalls.
- */
+// Новая функция для вывода 16-битного числа в 16-ричном формате
+void print_hex(unsigned int n) {
+    char* hex_chars = "0123456789ABCDEF";
+    for (int i = 12; i >= 0; i -= 4) {
+        print_char(hex_chars[(n >> i) & 0xF]);
+    }
+}
+
+// Новая функция для рекурсивного вывода 16-битного числа в 10-ричном формате
+void print_dec_recursive(unsigned int n) {
+    if (n == 0) return;
+    print_dec_recursive(n / 10);
+    print_char((n % 10) + '0');
+}
+
+void print_dec(unsigned int n) {
+    if (n == 0) {
+        print_char('0');
+    } else {
+        print_dec_recursive(n);
+    }
+}
+
+
 void initialize_syscalls() {
-    // Пока что эта функция-заглушка.
-    // Она демонстрирует, как могут быть организованы модули.
+    // Заглушка
 }
