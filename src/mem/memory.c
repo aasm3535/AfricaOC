@@ -80,6 +80,34 @@ void free(void* ptr) {
     // чтобы бороться с фрагментацией памяти. Пока что оставляем простую реализацию.
 }
 
+void* realloc(void* ptr, size_t new_size) {
+    if (!ptr) {
+        // Если ptr равен NULL, realloc ведет себя как malloc
+        return malloc(new_size);
+    }
+    if (new_size == 0) {
+        // Если new_size равен 0, realloc ведет себя как free
+        free(ptr);
+        return 0;
+    }
+
+    header_t* block_header = (header_t*)((char*)ptr - sizeof(header_t));
+    size_t old_size = block_header->size - sizeof(header_t);
+
+    if (new_size <= old_size) {
+        // Можно использовать тот же блок, если новый размер меньше или равен
+        return ptr;
+    }
+
+    // Выделяем новый блок и копируем данные
+    void* new_ptr = malloc(new_size);
+    if (new_ptr) {
+        memcpy(new_ptr, ptr, old_size);
+        free(ptr); // Освобождаем старый блок
+    }
+    return new_ptr;
+}
+
 void print_memory_map() {
     header_t* current = head;
     print_string("Memory Map:\n");

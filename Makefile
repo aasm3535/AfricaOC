@@ -15,7 +15,6 @@ BOOT_SRC = $(SRC_DIR)/boot.asm
 # Автоматически находим все C-файлы в src и его поддиректориях
 C_SOURCES = $(shell find $(SRC_DIR) -name '*.c')
 # Генерируем имена объектных файлов, сохраняя структуру директорий
-# Пример: src/sys/sys16.c -> build/sys/sys16.o
 C_OBJECTS = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(C_SOURCES))
 
 KERNEL_ASM_SRC = $(SRC_DIR)/kernel_entry.asm
@@ -28,7 +27,6 @@ KERNEL_BIN = $(BUILD_DIR)/kernel.bin
 IMAGE = $(BUILD_DIR)/os.img
 
 # --- Флаги компилятора и линковщика ---
-# Добавлены флаги -Wall и -Wextra для вывода всех предупреждений
 CFLAGS = -m16 -ffreestanding -O2 -fno-pie -I$(SRC_DIR) -Wall -Wextra
 LDFLAGS = -T $(SRC_DIR)/linker.ld --oformat binary
 
@@ -46,11 +44,10 @@ $(KERNEL_BIN): $(KERNEL_ASM_OBJ) $(C_OBJECTS)
 	@echo "Linking kernel..."
 	@$(LD) $(LDFLAGS) -o $@ $^
 
-# Общее правило для компиляции C-файлов.
-# Оно будет работать для всех .c файлов в проекте.
+# Общее правило для компиляции всех C-файлов.
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	@echo "Compiling C file: $<"
-	@mkdir -p $(dir $@)  # Создаем поддиректорию в build, если ее нет
+	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -c $< -o $@
 
 $(KERNEL_ASM_OBJ): $(KERNEL_ASM_SRC)
