@@ -1,35 +1,46 @@
 #include "sys16.h"
 
-// --- Функции вывода ---
-
 void print_char(char c) {
     if (c == '\n') {
-        __asm__ __volatile__ ( "int $0x10" : : "a" ((0x0E << 8) | '\r'), "b" (0x0000) );
+        __asm__ __volatile__ ( "int $0x10" : : "a" ((0x0E << 8) | '\r'), "b" (0x0000) : "memory" );
     }
-    __asm__ __volatile__ ( "int $0x10" : : "a" ((0x0E << 8) | c), "b" (0x0000) );
+    __asm__ __volatile__ ( "int $0x10" : : "a" ((0x0E << 8) | c), "b" (0x0000) : "memory" );
+}
+
+void print_char_color(char c, unsigned char color) {
+    if (c == '\n' || c == '\r') {
+        print_char('\n');
+    } else {
+        __asm__ __volatile__ ( "int $0x10" : : "a"((0x0900) | c), "b"(color), "c"(1) : "memory");
+
+        unsigned short dx_val;
+        __asm__ __volatile__ ( "int $0x10" : "=d"(dx_val) : "a"(0x0300), "b"(0) : "cx" );
+        move_cursor((dx_val & 0xFF) + 1, dx_val >> 8);
+    }
 }
 
 void print_string(const char* str) {
-    // ИСПРАВЛЕНИЕ: Добавлен инкремент указателя str++
     while (*str) {
         print_char(*str++);
     }
 }
 
 void move_cursor(int x, int y) {
-    // int 0x10, ah=0x02 - установить позицию курсора
-    // bh = номер страницы (0), dh = строка, dl = столбец
-    __asm__ __volatile__ ( "int $0x10" : : "a"(0x0200), "b"(0x0000), "d"((y << 8) | x) );
+    __asm__ __volatile__ ( "int $0x10" : : "a"(0x0200), "b"(0x0000), "d"((y << 8) | x) : "memory" );
 }
 
 void clear_screen() {
-    __asm__ __volatile__("int $0x10" : : "a"(0x0003));
+    __asm__ __volatile__("int $0x10" : : "a"(0x0003) : "memory");
 }
-
-// --- Функции ввода ---
 
 char read_char() {
     char key;
+    __asm__ __volatile__ ( "int $0x16" : "=a"(key) : "a"(0x0000) );
+    return key;
+}
+
+keypress_t read_keypress() {
+    keypress_t key;
     __asm__ __volatile__ ( "int $0x16" : "=a"(key) : "a"(0x0000) );
     return key;
 }
@@ -39,7 +50,7 @@ void read_line(char* buffer, int max_len) {
     while (i < max_len - 1) {
         char c = read_char();
         if (c == '\r') { break; }
-        else if (c == '\b') { // Backspace
+        else if (c == '\b') {
             if (i > 0) { i--; print_char('\b'); print_char(' '); print_char('\b'); }
         } else {
             buffer[i++] = c;
@@ -50,25 +61,12 @@ void read_line(char* buffer, int max_len) {
     print_string("\n");
 }
 
-// --- Вспомогательные функции ---
-
 int strcmp(const char* s1, const char* s2) {
     while (*s1 && (*s1 == *s2)) {
         s1++;
         s2++;
     }
     return *(const unsigned char*)s1 - *(const unsigned char*)s2;
-}
-
-void strcpy_s(char* dest, const char* src, int dest_size) {
-    int i = 0;
-    // Копируем, пока не кончится исходная строка или место в буфере
-    while (src[i] && i < dest_size - 1) {
-        dest[i] = src[i];
-        i++;
-    }
-    // Завершаем строку нулевым символом
-    dest[i] = '\0';
 }
 
 int strlen(const char* s) {
@@ -79,8 +77,17 @@ int strlen(const char* s) {
     return len;
 }
 
+void strcpy_s(char* dest, const char* src, int dest_size) {
+    int i = 0;
+    while (src[i] && i < dest_size - 1) {
+        dest[i] = src[i];
+        i++;
+    }
+    dest[i] = '\0';
+}
+
 void strcat(char* dest, const char* src) {
-    strcpy_s(dest + strlen(dest), src, 255); // Используем существующую безопасную копию
+    strcpy_s(dest + strlen(dest), src, 255);
 }
 
 void* memcpy(void* dest, const void* src, size_t n) {
@@ -92,24 +99,14 @@ void* memcpy(void* dest, const void* src, size_t n) {
     return dest;
 }
 
-keypress_t read_keypress() {
-    keypress_t key;
-    // int 0x16, ah=0x00 или 0x10 - ждать нажатия клавиши
-    // ah=0x00 возвращает в ax, ah=0x10 возвращает расширенные коды
-    __asm__ __volatile__ ( "int $0x16" : "=a"(key) : "a"(0x0000) );
-    return key;
-}
-
 void* memmove(void* dest, const void* src, size_t n) {
     char* d = dest;
     const char* s = src;
     if (d < s) {
-        // Копируем с начала
         for (size_t i = 0; i < n; i++) {
             d[i] = s[i];
         }
     } else {
-        // Копируем с конца, чтобы избежать затирания
         for (size_t i = n; i != 0; i--) {
             d[i-1] = s[i-1];
         }

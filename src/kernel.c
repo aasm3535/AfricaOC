@@ -4,6 +4,7 @@
 #include "mem/memory.h"
 #include "shell/shell.h"
 #include "vfs/vfs.h" // <<<--- ДОБАВИТЬ
+#include "shell/colors.h"
 
 // Объявление символа 'end' из linker.ld.
 extern unsigned int end;
@@ -28,23 +29,28 @@ void shell_loop() {
 /**
  * @brief Главная функция ядра.
  */
-void kmain() {
-    // 1. Инициализируем системные модули
-    void* heap_start = (void*)&end;
-    unsigned int heap_size = 0x9E000 - (unsigned int)heap_start;
+ void kmain() {
+     // 1. Инициализируем системные модули
+     void* heap_start = (void*)&end;
+     unsigned int heap_size = 0x9E000 - (unsigned int)heap_start;
 
-    clear_screen(); // Очистим экран перед выводом
+     clear_screen();
 
-    memory_init(heap_start, heap_size);
-    vfs_init(); // <<<--- ДОБАВИТЬ ИНИЦИАЛИЗАЦИЮ VFS
-    shell_init();
+     memory_init(heap_start, heap_size);
+     vfs_init();
+     shell_init();
 
-    // 2. Выводим приветствие
-    print_string("AfricaOS Kernel Initialized. Welcome!\n");
-    print_string("Heap starts at 0x");
-    print_hex((unsigned int)heap_start);
-    print_string("\n\n");
+     // 2. Выводим приветствие
+     // --- ИЗМЕНЯЕМ ПРИВЕТСТВИЕ НА ЦВЕТНОЕ ---
+     print_string_color("Welcome to ", COLOR_LIGHT_GREY);
+     print_string_rainbow("AfricaOS");
+     print_string_color("! Kernel Initialized.\n", COLOR_LIGHT_GREY);
+     // --- КОНЕЦ ИЗМЕНЕНИЯ ---
 
-    // 3. Запускаем главный цикл
-    shell_loop();
-}
+     print_string("Heap starts at 0x");
+     print_hex((unsigned int)heap_start);
+     print_string("\n\n");
+
+     // 3. Запускаем главный цикл
+     shell_loop();
+ }

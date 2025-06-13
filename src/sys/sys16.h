@@ -17,6 +17,7 @@ typedef struct {
 // --- Функции для работы с экраном ---
 void clear_screen();
 void print_char(char c);
+void print_char_color(char c, unsigned char color);
 void print_string(const char* str);
 void move_cursor(int x, int y); // <<<--- ДОБАВИТЬ
 
