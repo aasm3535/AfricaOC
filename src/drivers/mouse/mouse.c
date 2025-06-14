@@ -1,5 +1,5 @@
 #include "mouse.h"
-#include "../sys/sys16.h" // Нужен для print_string и других
+#include "../../sys/sys16.h" // Нужен для print_string и других
 
 // Переменная для хранения информации о наличии мыши
 static int mouse_present = 0;
@@ -29,6 +29,7 @@ void mouse_hide_cursor() {
     __asm__ __volatile__("mov $0x02, %%ax; int $0x33" : : : "ax");
 }
 
+
 void mouse_get_event(mouse_event_t* event) {
     if (!mouse_present) return;
 
@@ -36,10 +37,11 @@ void mouse_get_event(mouse_event_t* event) {
     // AX = 0x03: Получить состояние мыши
     __asm__ __volatile__("mov $0x03, %%ax; int $0x33" : "=b"(buttons), "=c"(x_pixels), "=d"(y_pixels) : : "ax");
 
-    // BIOS возвращает координаты в пикселях. Конвертируем их в знакоместа.
-    // Стандартный текстовый режим имеет символы 8x8 или 8x16 пикселей. Возьмем 8.
-    event->x = x_pixels / 8;
-    event->y = y_pixels / 8;
+    // <<<--- ИЗМЕНЕНИЕ ---
+    // Больше не делим на 8, нам нужны пиксельные координаты
+    event->x = x_pixels;
+    event->y = y_pixels;
+    // --- КОНЕЦ ИЗМЕНЕНИЯ ---
 
     // Распаковываем состояние кнопок из регистра BX
     event->left_button = (buttons & 0x01) ? 1 : 0;

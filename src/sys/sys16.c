@@ -7,6 +7,24 @@ void print_char(char c) {
     __asm__ __volatile__ ( "int $0x10" : : "a" ((0x0E << 8) | c), "b" (0x0000) : "memory" );
 }
 
+/**
+ * @brief Очищает весь экран, используя заданный цветовой атрибут.
+ * @param attribute Байт атрибута (фон << 4 | текст).
+ */
+void clear_screen_with_color(unsigned char attribute) {
+    __asm__ __volatile__ (
+        "int $0x10"
+        :
+        : "a"(0x0600),       // AH=0x06 (scroll up), AL=0x00 (clear entire window)
+          "b"(attribute),    // BH = атрибут цвета
+          "c"(0x0000),       // CH=0 (top row), CL=0 (left col)
+          "d"(0x184F)        // DH=24 (bottom row), DL=79 (right col)
+        : "memory"
+    );
+    // После очистки ставим курсор в начало
+    move_cursor(0, 0);
+}
+
 void print_char_color(char c, unsigned char color) {
     if (c == '\n' || c == '\r') {
         print_char('\n');
