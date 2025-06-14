@@ -21,7 +21,6 @@ typedef enum {
     COLOR_WHITE = 15,
 } text_color_t;
 
-#define DEFAULT_SCREEN_ATTRIBUTE ((COLOR_DARK_GREY << 4) | COLOR_LIGHT_GREY)
 
 /**
  * @brief Печатает строку, где каждая буква имеет свой цвет (радуга).
